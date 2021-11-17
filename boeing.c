@@ -88,10 +88,11 @@ void inicializaVetor(int n, double *vet, int valor){
 void inicializaMatriz(int n, double *matA){
 	int i;
 	double r;
-	//int mat[25] = {5, 0, 2, 0, 0, 2, 5, 0, 0, 0, 0, 2, 5, 0, 1, 1, 0, 0, 5, 2, 1, 0, 1, 2, 5};
+	// int mat[25] = {5, 0, 2, 0, 0, 2, 5, 0, 0, 0, 0, 2, 5, 0, 1, 1, 0, 0, 5, 2, 1, 0, 1, 2, 5};
+	int mat[25] = {4,1,0,0,5,0,4,1,0,0,0,0,4,1,0,0,0,0,4,1,0,0,0,0,4};
 	for( i=0; i<n*n; i++){
 		r = rand() % 10;
-		matA[i] = r;
+		matA[i] = mat[i];
 	}
 	
 }
@@ -102,28 +103,39 @@ void produtoMatrizVetor(int n, double *mat, double *vet, double *res){
 		res[i] = 0;
 		for(j=0;j<n;j++)
 			res[i] += mat[i*n+j] * vet[j];
+		
 	}	
 }
 
-void produto_matriz_vetor (double *mat, int *lin, int *ptr, double *vet, double *res, int N){
+void produto_matriz_vetor (double *val, int *lin, int *ptr, double *vet, double *res, int n){
 	int i,j;
-	for(i=0;i<N;i++){
+	printf("---produto_matriz_vetor---\n");
+	for(i=0;i<n;i++){
 		res[i] = 0;
-		for(j=ptr[i];j<ptr[i+1];j++){
-			int index = lin[j];
-			res[i] += mat[j] * vet[index];
+		for(j=ptr[i]-1;j<ptr[i+1]-1;j++){ // 0 -- 3
+			printf("j:%d;val[%d]:%lf;lin[%d]=%d;vet[%d]:%lf\n",j,j,val[j],j,lin[j],j,vet[lin[j]]);
+			res[i] += val[j] * vet[lin[j]-1];
+			printf("res[%d]:%lf\n\n",i,res[i]);
 		}
+		printf("i:%d;res:%lf\n",i,res[i]);
 	}		
 }
 
 void produto_matriz_transposta_vetor(double *mat, int *lin, int *ptr, double *vet, double *res, int N){
 	int i,j;
+	printf("---produto_matriz_transposta_vetor---\n");
+
 	for(j=0;j<N;j++){
 		res[j] = 0;
-		for(i=ptr[j];i<ptr[j+1];i++){
-			int index = lin[i];
+	}
+
+	for(j=0;j<N;j++){
+		for(i=ptr[j]-1;i<ptr[j+1]-1;i++){
+			int index = lin[i]-1;
+			printf("j=%d;i=%d;lin[%d]=%d;index=%d;mat[%d]=%lf;vet[%d]=%lf\n",j,i,i,lin[i],index,i,mat[i],j,vet[j]);
 			res[index] += mat[i] * vet[j];
 		}
+		printf("\n\n");
 	}		
 }
 
@@ -168,6 +180,7 @@ void transpostaMatriz(int n, double *mat, double *matT){
 }
 
 void bigC(int naozeros, int n, double *matA, double *vetB, int *linhas, int *colptr){
+	
 	double *vetX, *vaux, *vetR, *vetR2,*vetR2T, *vetP, *vetP2, rho, rho0, beta, *vetV, alpha, *matT;
 	int i;
 
@@ -191,18 +204,25 @@ void bigC(int naozeros, int n, double *matA, double *vetB, int *linhas, int *col
 	// r = b - Ax
 	inicializaVetor(n, vaux, 0);
 	produto_matriz_vetor(matA,linhas,colptr,vetX,vaux,n);
+
+	printf("vaux\n");
+	escreveVetor(vaux,n);
+	
 	// produtoMatrizVetor(n, matA, vetX, vaux);
 	
 	inicializaVetor(n, vetR, 0);
 	subtracaoVetor(n, vetB, vaux, vetR);
 	copiaVetor(n, vetR, vetR2);
 	
+	printf("vetR2\n");
+	escreveVetor(vetR2,n);
+
 	//p = p2 = 0
 	inicializaVetor(n, vetP, 0);
 	inicializaVetor(n, vetP2, 0);
 	
 	rho = 1;
-
+	
 	while(i < IMAX){
 		rho0 = rho;
 		
@@ -210,20 +230,32 @@ void bigC(int naozeros, int n, double *matA, double *vetB, int *linhas, int *col
         	rho = produtoEscalarVetores(n, vetR2,vetR);
 
 	        beta = rho / rho0;
-
+		printf("i=%d;n=:%d;beta:%lf\n",i,n,beta);
                 // p = r + beta * p
 		escalarVetor(n, beta,vetP, vaux);
+		
 		somaVetor(n, vetR, vaux, vetP);
-	        // p2 = r2 + beta * p2
+	    printf("vetP\n");
+		escreveVetor(vetP,n);
+		
+		    // p2 = r2 + beta * p2
 		escalarVetor(n, beta, vetP2, vaux);
 		somaVetor(n, vetR2,vaux, vetP2);
+
+		printf("vetP2\n");
+		escreveVetor(vetP2,n);
+
 		// v = A*p        
 		inicializaVetor(n, vetV, 0);
         	//produtoMatrizVetor(n, matA,vetP,vetV);
 		produto_matriz_vetor(matA,linhas,colptr,vetP,vetV,n);
+
+		printf("vetV\n");
+		escreveVetor(vetV,n);
+
         	//alpha = rho / (p2*v)        	
 		alpha = rho/produtoEscalarVetores(n, vetP2, vetV);
-
+		printf("i=%d;alpha:%lf\n",i,alpha);
         	//x = x + alpha * p
 		escalarVetor(n, alpha, vetP, vaux);
 		somaVetor(n, vetX, vaux, vetX);
@@ -244,6 +276,9 @@ void bigC(int naozeros, int n, double *matA, double *vetB, int *linhas, int *col
 		produto_matriz_transposta_vetor(matA,linhas,colptr,vetP2,vaux,n);		
 		//produtoMatrizVetor(n, matT,vetP2,vaux);	
 	
+		printf("produto-transposta-vaux\n");
+		escreveVetor(vaux,n);
+
 		escalarVetor(n, alpha, vaux, vaux);
 		subtracaoVetor(n,vetR2, vaux, vetR2);
 
@@ -254,7 +289,7 @@ void bigC(int naozeros, int n, double *matA, double *vetB, int *linhas, int *col
 	escreveVetor(vetX, n);
 	printf("\n");
 	printf("i:%d\n",i);
-	
+	/**/
 	
 }
 
