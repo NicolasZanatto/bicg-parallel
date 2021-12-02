@@ -65,18 +65,7 @@ void escreve_matriz(int id, int M, int N, int naozeros,int nproc, int *colptr, i
 
 
 
-
-void escreveMatriz(double *mat, int n){
-    int i,j;
-    for(i=0; i<n; i++){
-	for(j=0; j<n; j++){
-		printf("% 5.2lf\t", mat[i*n+j]);
-    	}
-    	printf("\n");
-    }
-}
-
-void escreveVetor(int id, double *vet, int n){
+void escreve_vetor(int id, double *vet, int n){
 	int i;
 	printf("ID=%d\n",id);
 	for(i=0; i<n; i++){
@@ -84,7 +73,7 @@ void escreveVetor(int id, double *vet, int n){
 	}
 }
 
-void escreveVetorInt(int id, int *vet, int n){
+void escreve_vetorInt(int id, int *vet, int n){
 	int i;
 	printf("ID=%d\n",id);
 	for(i=0; i<n; i++){
@@ -92,33 +81,21 @@ void escreveVetorInt(int id, int *vet, int n){
 	}
 }
 
-void inicializaVetor(int n, double *vet, int valor){
+void inicializa_vetor(int n, double *vet, int valor){
 	for(int i=0; i<n; i++){
 		vet[i] = valor;
 	}
 }
 
-void inicializaVetorInt(int n, int *vet, int valor){
+void inicializa_vetorInt(int n, int *vet, int valor){
 	for(int i=0; i<n; i++){
 		vet[i] = valor;
 	}
 }
 
-void inicializaMatriz(int n, double *matA){
-	int i;
-	double r;
-	// int mat[25] = {5, 0, 2, 0, 0, 2, 5, 0, 0, 0, 0, 2, 5, 0, 1, 1, 0, 0, 5, 2, 1, 0, 1, 2, 5};
-	int mat[25] = {4,1,0,0,5,0,4,1,0,0,0,0,4,1,0,0,0,0,4,1,0,0,0,0,4};
-	for( i=0; i<n*n; i++){
-		r = rand() % 10;
-		matA[i] = mat[i];
-	}
-	
-}
-
-void calcular_transposta(int id,double *mat,int *linhas, int *colptr, double *mat_t, int *colunas, int *linptr, int N, int naozeros){
+void calcula_transposta(int id,double *mat,int *linhas, int *colptr, double *mat_t, int *colunas, int *linptr, int N, int naozeros){
 	int i,j,temp,lin,dest,last,cumsum=0;
-	inicializaVetorInt(N+1, linptr,0);
+	inicializa_vetorInt(N+1, linptr,0);
 	for(i=0;i<naozeros;i++){
 		linptr[linhas[i]-1]++;  
 		// linhas[i]-1
@@ -207,19 +184,19 @@ void produto_matriz_transposta_vetor(double *mat, int *lin, int *ptr, double *ve
 	}		
 }
 
-void subtracaoVetor(int n, double *vetB, double *vaux, double *vetR){
+void subtracao_vetor(int n, double *vetB, double *vaux, double *vetR){
 	for(int i=0;i<n;i++){
 		vetR[i] = vetB[i] - vaux[i];
 	}
 }
 
-void copiaVetor(int n, double *vetOrigem, double *vetDestino){
+void copia_vetor(int n, double *vetOrigem, double *vetDestino){
 	for(int i=0;i<n;i++){
 		vetDestino[i] = vetOrigem[i];
 	}
 }
 
-double produtoEscalarVetores(int n, double *vet1, double *vet2){
+double produto_escalar_vetores(int n, double *vet1, double *vet2){
 	int i;
 	double prod=0;
 	for(i=0;i<n;i++)
@@ -227,24 +204,16 @@ double produtoEscalarVetores(int n, double *vet1, double *vet2){
 	return(prod);	
 }
 
-double escalarVetor(int n, double escalar, double *vet, double *res){
+double escalar_vetor(int n, double escalar, double *vet, double *res){
 	int i;
 	for(i=0;i<n;i++)
 		res[i] = escalar * vet[i];
 }
 
-void somaVetor(int n, double *vet1, double *vet2, double *res){
+void soma_vetor(int n, double *vet1, double *vet2, double *res){
 	int i;
 	for(i=0;i<n;i++)
 		res[i] = vet1[i] + vet2[i];
-}
-
-
-void transpostaMatriz(int n, double *mat, double *matT){
-	for (int i = 0; i < n; i++)
-		for (int j = 0; j < n; j++) {
-		    matT[j*n+i] = mat[i*n+j];
-		}
 }
 
 
@@ -292,47 +261,36 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 	cont = (int *)malloc(nproc*sizeof(int));
 	deslocamento = (int *)malloc(nproc*sizeof(int));
 	// x = 0	
-	inicializaVetor(n, vetX, 0);
+	inicializa_vetor(n, vetX, 0);
 
 	i = 1;
 	tam = calculo_gatterv(id,nproc,n,cont,deslocamento);
 	
 	// r = b - Ax
-	inicializaVetor(tam, vaux_p, 0);
+	inicializa_vetor(tam, vaux_p, 0);
 	
 	
 	produto_matriz_vetor(id, nproc, matA_t,colunas_t,linptr_t,vetX,vaux_p,n);
 
 	
-	// printf("vaux_p\n");
-	// escreveVetor(id, vaux_p,n/nproc);
-	
 	if(id ==0){
-		escreveVetorInt(id, cont, nproc);
-	}
-	// MPI_Allgather(vaux_p, n/nproc, MPI_DOUBLE, vaux, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
-	
+		escreve_vetorInt(id, cont, nproc);
+	}	
 
 	MPI_Allgatherv(vaux_p, tam, MPI_DOUBLE, vaux, cont, deslocamento, MPI_DOUBLE, MPI_COMM_WORLD); 
 	if(id==0){
 		printf("vaux\n");
-		escreveVetor(id, vaux,n);
+		escreve_vetor(id, vaux,n);
 	}
 	
 	
-	// produtoMatrizVetor(n, matA, vetX, vaux);
-	
-	
-	inicializaVetor(n, vetR, 0);
-	subtracaoVetor(n, vetB, vaux, vetR);
-	copiaVetor(n, vetR, vetR2);
-	
-	// printf("vetR2\n");
-	// escreveVetor(vetR2,n);
+	inicializa_vetor(n, vetR, 0);
+	subtracao_vetor(n, vetB, vaux, vetR);
+	copia_vetor(n, vetR, vetR2);
 
 	//p = p2 = 0
-	inicializaVetor(n, vetP, 0);
-	inicializaVetor(n, vetP2, 0);
+	inicializa_vetor(n, vetP, 0);
+	inicializa_vetor(n, vetP2, 0);
 	
 	rho = 1;
 	
@@ -340,71 +298,76 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 		rho0 = rho;
 		
 		//rho = r2 * r    
-		rho = produtoEscalarVetores(n, vetR2,vetR);
+		rho = produto_escalar_vetores(n, vetR2,vetR);
 
 		beta = rho / rho0;
 		printf("id=%d;n=:%d;beta:%lf\n",id,n,beta);
 		
-                // p = r + beta * p
-		escalarVetor(n, beta,vetP, vaux);
+		// p = r + beta * p
+		escalar_vetor(n, beta,vetP, vaux);
 		
-		somaVetor(n, vetR, vaux, vetP);
-	    // printf("vetP\n");
-		// escreveVetor(vetP,n);
+		soma_vetor(n, vetR, vaux, vetP);
 		
 		// p2 = r2 + beta * p2
-		escalarVetor(n, beta, vetP2, vaux);
-		somaVetor(n, vetR2,vaux, vetP2);
+		escalar_vetor(n, beta, vetP2, vaux);
+		soma_vetor(n, vetR2,vaux, vetP2);
 
 		printf("vetP\n");
-		escreveVetor(id,vetP,n);
-		//
+		escreve_vetor(id,vetP,n);
 		// v = A*p        
-		inicializaVetor(tam, vetV_p, 0);
+		inicializa_vetor(tam, vetV_p, 0);
 		produto_matriz_vetor(id, nproc, matA_t,colunas_t,linptr_t,vetP,vetV_p,n);
-		// MPI_Allgather(vetV_p, n/nproc, MPI_DOUBLE, vetV, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
-		
 		MPI_Allgatherv(vetV_p, tam, MPI_DOUBLE, vetV, cont, deslocamento, MPI_DOUBLE, MPI_COMM_WORLD); 
 
 		if(id==0){
 			printf("vetV\n");
-			escreveVetor(id,vetV,n);
+			escreve_vetor(id,vetV,n);
 		}
 		
 		//alpha = rho / (p2*v)        	
-		alpha = rho/produtoEscalarVetores(n, vetP2, vetV);
-		// printf("i=%d;alpha:%lf\n",i,alpha);
-        	//x = x + alpha * p
-		escalarVetor(n, alpha, vetP, vaux);
-		somaVetor(n, vetX, vaux, vetX);
+		alpha = rho/produto_escalar_vetores(n, vetP2, vetV);
+		//x = x + alpha * p
+		escalar_vetor(n, alpha, vetP, vaux);
+		soma_vetor(n, vetX, vaux, vetX);
 		
 	    // r * r
-		if (produtoEscalarVetores(n, vetR,vetR) < ERRO * ERRO) 
+		if (produto_escalar_vetores(n, vetR,vetR) < ERRO * ERRO) 
 		    break;
 		    
 		//r = r - alpha * v
         
-		escalarVetor(n,alpha, vetV, vaux);
-	    subtracaoVetor(n, vetR, vaux, vetR);
+		escalar_vetor(n,alpha, vetV, vaux);
+	    subtracao_vetor(n, vetR, vaux, vetR);
 		
         //r2 = r2 - alpha *A' * p2 
-		inicializaVetor(tam, vaux_p, 0);
+		inicializa_vetor(tam, vaux_p, 0);
 		produto_matriz_vetor(id,nproc,matA,linhas,colptr,vetP2,vaux_p,n);
-		// MPI_Allgather(vaux_p, n/nproc, MPI_DOUBLE, vaux, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
 		MPI_Allgatherv(vaux_p, tam, MPI_DOUBLE, vaux, cont, deslocamento, MPI_DOUBLE, MPI_COMM_WORLD); 
 
-	
-		// printf("produto-transposta-vaux\n");
-		// escreveVetor(vaux,n);
-		escalarVetor(n, alpha, vaux, vaux);
-		subtracaoVetor(n,vetR2, vaux, vetR2);
+		escalar_vetor(n, alpha, vaux, vaux);
+		subtracao_vetor(n,vetR2, vaux, vetR2);
 		i++;
 	}
 	printf("vetX:\n");
-	escreveVetor(id,vetX, n);
+	escreve_vetor(id,vetX, n);
 	printf("\n");
 	printf("i:%d\n",i);
 	/**/
+
+
+	free(vaux);
+	free(vaux_p);
+	free(vetR);
+	free(vetR2);
+	free(vetR2T);
+	free(vetP);
+	free(vetP2);
+	free(vetV);
+	free(vetV_p);
+	free(matT);
+	free(cont);
+	free(deslocamento);
+
 }
 
 
@@ -456,7 +419,7 @@ int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porq
 	linptr  = (int *) malloc ((N+1) * sizeof(int));
 
 	if(id ==0){
-		calcular_transposta(id,mat,linhas,colptr, mat_t, colunas, linptr, N, naozeros);
+		calcula_transposta(id,mat,linhas,colptr, mat_t, colunas, linptr, N, naozeros);
 	}
 
 	MPI_Bcast(colunas,naozeros,MPI_INT,0,MPI_COMM_WORLD);
@@ -467,7 +430,7 @@ int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porq
 	vetB = (double *) malloc (N*sizeof(double));
 	
 	if(id == 0)
-		inicializaVetor(N, vetB, 1);
+		inicializa_vetor(N, vetB, 1);
 
 	MPI_Bcast(vetB,N,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
@@ -477,5 +440,14 @@ int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porq
 
 	bigC(id, nproc, naozeros,N, mat, vetB,linhas, colptr, vetX, mat_t, colunas, linptr);
 	/**/
+
+	free(linhas);
+	free(colptr);
+	free(mat);
+	free(mat_t);
+	free(colunas);
+	free(linptr);
+
+
 	MPI_Finalize();
 }
