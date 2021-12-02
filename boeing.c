@@ -169,45 +169,24 @@ void produto_matriz_vetor (int id, int nproc, double *val, int *lin, int *ptr, d
 	printf("---produto_matriz_vetor---\n");
 	
 	printf("ID:%d\n",id);
-	// val.size = 2 pq nproc = 5 
-	// lin.size = 10
-	// ptr.size = 6
-
 
 	if(id != nproc-1){  //id=0;N=5;nproc=5
 		for(i=(id*(N/nproc));i<(id+1)*(N/nproc);i++){
 			// inic=0;fim=2 
 			res[k] = 0;
 			for(j=ptr[i]-1;j<ptr[i+1]-1;j++){
-
-				// printf("ptr[i+id+1]:%d\n",ptr[i+id+1]);
-				// printf("ID:%d;j:%d;val[%d]:%lf;lin[%d]=%d;vet[%d]:%lf\n",id,j,j,val[j],j,lin[j],j,vet[lin[j]]);
 				res[k] += val[j] * vet[lin[j]-1];
-				// printf("res[%d]:%lf\n\n",i,res[i]);
-				
 			}
 			k++;
-			// printf("i:%d;res:%lf\n",i,res[i]);
 		}
 	}		
 	else{
-		// printf("Entrou\n");
-		// printf("id*(N/nproc):%d\n",(id*(N/nproc)));
-		// printf("N=%d\n",N);
 		for(i=(id*(N/nproc));i<N;i++){ 
 			res[k] = 0;
-			for(j=ptr[i]-1;j<ptr[i+1]-1;j++){ // id=0: 0 -- 3
-													// id=1: 3 -- 5
-													// id=2: 5 -- 7
-													// id=3: 7 -- 9
-													// id=4: 9 -- 10
-				// printf("ID:%d;i=%d;j:%d;val[%d]:%lf;lin[%d]=%d;vet[%d]:%lf\n",id,i,j,j,val[j],j,lin[j],j,vet[lin[j]]);
+			for(j=ptr[i]-1;j<ptr[i+1]-1;j++){ 
 				res[k] += val[j] * vet[lin[j]-1];
-				// printf("res[%d]:%lf\n\n",i,res[i]);
-				
 			}
 			k++;
-			// printf("i:%d;res:%lf\n",i,res[i]);
 		}
 	}
 }
@@ -223,10 +202,8 @@ void produto_matriz_transposta_vetor(double *mat, int *lin, int *ptr, double *ve
 	for(j=0;j<N;j++){
 		for(i=ptr[j]-1;i<ptr[j+1]-1;i++){
 			int index = lin[i]-1;
-			// printf("j=%d;i=%d;lin[%d]=%d;index=%d;mat[%d]=%lf;vet[%d]=%lf\n",j,i,i,lin[i],index,i,mat[i],j,vet[j]);
 			res[index] += mat[i] * vet[j];
 		}
-		// printf("\n\n");
 	}		
 }
 
@@ -270,10 +247,36 @@ void transpostaMatriz(int n, double *mat, double *matT){
 		}
 }
 
+
+int calculo_gatterv(int id,int nproc,int N,int *cont, int *deslocamento){
+	int i, tam = 0,d = 0;
+	
+	for(i=0; i<nproc; i++){
+		if ( i != nproc-1 ){
+			cont[i] = N/nproc;
+			deslocamento[i] = d;
+			d += N/nproc;
+		}
+		else{
+			cont[i] = N/nproc + N%nproc;
+			deslocamento[i] = d;
+			d += N/nproc + N%nproc;
+		}
+	}	
+	
+	if ( id != nproc-1 ){
+		tam = N/nproc;
+	}
+	else{
+		tam = N/nproc + N%nproc;
+	}
+	return tam;
+}
+
 void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, int *linhas, int *colptr, double *vetX, double *matA_t, int *colunas_t, int *linptr_t){
 	
 	double *vaux, *vaux_p, *vetR, *vetR2,*vetR2T, *vetP, *vetP2, rho, rho0, beta, *vetV, *vetV_p, alpha, *matT;
-	int i;
+	int i,tam,*cont = NULL,*deslocamento= NULL;
 
 	vaux = (double *) malloc (n*sizeof(double));
 	vaux_p = (double *) malloc (n/nproc*sizeof(double));
@@ -286,15 +289,16 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 	vetV_p = (double *) malloc (n/nproc*sizeof(double));
 	
 	matT = (double *) malloc (n*n*sizeof(double));
-
-	
+	cont = (int *)malloc(nproc*sizeof(int));
+	deslocamento = (int *)malloc(nproc*sizeof(int));
 	// x = 0	
 	inicializaVetor(n, vetX, 0);
 
 	i = 1;
+	tam = calculo_gatterv(id,nproc,n,cont,deslocamento);
 	
 	// r = b - Ax
-	inicializaVetor(n/nproc, vaux_p, 0);
+	inicializaVetor(tam, vaux_p, 0);
 	
 	
 	produto_matriz_vetor(id, nproc, matA_t,colunas_t,linptr_t,vetX,vaux_p,n);
@@ -303,8 +307,13 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 	// printf("vaux_p\n");
 	// escreveVetor(id, vaux_p,n/nproc);
 	
-	MPI_Allgather(vaux_p, n/nproc, MPI_DOUBLE, vaux, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+	if(id ==0){
+		escreveVetorInt(id, cont, nproc);
+	}
+	// MPI_Allgather(vaux_p, n/nproc, MPI_DOUBLE, vaux, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+	
 
+	MPI_Allgatherv(vaux_p, tam, MPI_DOUBLE, vaux, cont, deslocamento, MPI_DOUBLE, MPI_COMM_WORLD); 
 	if(id==0){
 		printf("vaux\n");
 		escreveVetor(id, vaux,n);
@@ -351,9 +360,11 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 		escreveVetor(id,vetP,n);
 		//
 		// v = A*p        
-		inicializaVetor(n/nproc, vetV_p, 0);
+		inicializaVetor(tam, vetV_p, 0);
 		produto_matriz_vetor(id, nproc, matA_t,colunas_t,linptr_t,vetP,vetV_p,n);
-		MPI_Allgather(vetV_p, n/nproc, MPI_DOUBLE, vetV, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+		// MPI_Allgather(vetV_p, n/nproc, MPI_DOUBLE, vetV, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+		
+		MPI_Allgatherv(vetV_p, tam, MPI_DOUBLE, vetV, cont, deslocamento, MPI_DOUBLE, MPI_COMM_WORLD); 
 
 		if(id==0){
 			printf("vetV\n");
@@ -377,10 +388,11 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 	    subtracaoVetor(n, vetR, vaux, vetR);
 		
         //r2 = r2 - alpha *A' * p2 
-		inicializaVetor(n/nproc, vaux_p, 0);
+		inicializaVetor(tam, vaux_p, 0);
 		produto_matriz_vetor(id,nproc,matA,linhas,colptr,vetP2,vaux_p,n);
-		MPI_Allgather(vaux_p, n/nproc, MPI_DOUBLE, vaux, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
-		
+		// MPI_Allgather(vaux_p, n/nproc, MPI_DOUBLE, vaux, n/nproc, MPI_DOUBLE, MPI_COMM_WORLD);
+		MPI_Allgatherv(vaux_p, tam, MPI_DOUBLE, vaux, cont, deslocamento, MPI_DOUBLE, MPI_COMM_WORLD); 
+
 	
 		// printf("produto-transposta-vaux\n");
 		// escreveVetor(vaux,n);
@@ -445,9 +457,6 @@ int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porq
 
 	if(id ==0){
 		calcular_transposta(id,mat,linhas,colptr, mat_t, colunas, linptr, N, naozeros);
-		// escreveVetorInt(id,linptr,N+1);
-		// escreveVetorInt(id,colunas,naozeros);
-		// escreveVetor(id,mat_t,naozeros);
 	}
 
 	MPI_Bcast(colunas,naozeros,MPI_INT,0,MPI_COMM_WORLD);
