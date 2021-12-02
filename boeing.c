@@ -64,6 +64,8 @@ void escreve_matriz(int id, int M, int N, int naozeros,int nproc, int *colptr, i
 }
 
 
+
+
 void escreveMatriz(double *mat, int n){
     int i,j;
     for(i=0; i<n; i++){
@@ -96,6 +98,12 @@ void inicializaVetor(int n, double *vet, int valor){
 	}
 }
 
+void inicializaVetorInt(int n, int *vet, int valor){
+	for(int i=0; i<n; i++){
+		vet[i] = valor;
+	}
+}
+
 void inicializaMatriz(int n, double *matA){
 	int i;
 	double r;
@@ -107,6 +115,59 @@ void inicializaMatriz(int n, double *matA){
 	}
 	
 }
+
+void calcular_transposta(int id,double *mat,int *linhas, int *colptr, double *mat_t, int *colunas, int *linptr, int N, int naozeros){
+	int i,j,temp,lin,dest,last,cumsum=0;
+	inicializaVetorInt(N+1, linptr,0);
+	for(i=0;i<naozeros;i++){
+		linptr[linhas[i]-1]++;  
+		// linhas[i]-1
+	}
+
+	escreveVetorInt(id,linptr,N+1);
+
+	for(i = 0;i<N;i++){
+		temp = linptr[i];
+		linptr[i] = cumsum;
+		cumsum+=temp;
+	}
+	linptr[N] = naozeros;
+	// talvez precise aumentar um número nos valores
+	escreveVetorInt(id,linptr,N+1);
+
+	// for(i = 0;i<N+1;i++){
+	// 	linptr[i]++;
+	// }
+	// escreveVetorInt(id,linptr,N+1);
+
+	for(i=0;i<N;i++){
+		for(j=colptr[i]-1;j<colptr[i+1]-1;j++){
+			lin = linhas[j]-1;
+			dest = linptr[lin];
+			printf("i=%dj=%d;lin:%d;dest:%d\n",i,j, lin,dest);
+
+			colunas[dest] = i+1;
+			mat_t[dest] = mat[j];
+
+			linptr[lin]++;
+		}
+	}
+
+	last = 0;
+	for(i =0;i<=N;i++){
+		temp = linptr[i];
+		linptr[i] = last + 1;
+		last = temp;
+	}
+
+	
+	escreveVetorInt(id,linptr,N+1);
+	// escreveVetorInt(id,colunas,naozeros);
+	// escreveVetor(id,mat_t,naozeros);
+
+
+}
+
 
 void produtoMatrizVetor(int n, double *mat, double *vet, double *res){
 	int i,j;
@@ -353,11 +414,11 @@ void bigC(int id, int nproc, int naozeros, int n, double *matA, double *vetB, in
 
 int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porque tenho 2 parametros (nome e nome da matriz)
 
-	double *mat = NULL, *mat_p = NULL;
+	double *mat = NULL, *mat_t = NULL;
 	double *vetB, *vetX;
 	double sigma_novo, sigma_0,alpha, sigma_velho,beta;
 	double inicio, fim;
-	int *linhas = NULL, *colptr = NULL, *sendcounts, *displs;
+	int *linhas = NULL, *colptr = NULL, *colunas = NULL, *linptr = NULL;
 	int M, N, naozeros,n,i,j,id, nproc;
 
 	MPI_Init(&argc, &argv);
@@ -390,6 +451,17 @@ int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porq
 	MPI_Bcast(mat,naozeros,MPI_DOUBLE,0,MPI_COMM_WORLD);
 
 	escreve_matriz(id, M, N, naozeros,nproc, colptr, linhas, mat);
+
+	//------------Calcular Transposta vetB------------
+	mat_t = (double *) malloc (naozeros * sizeof(double));
+	colunas  = (int *) malloc (naozeros * sizeof(int));
+	linptr  = (int *) malloc ((N+1) * sizeof(int));
+
+	if(id ==0)
+		calcular_transposta(id,mat,linhas,colptr, mat_t, colunas, linptr, N, naozeros);
+
+
+	//------------Inicializar vetB------------
 	vetB = (double *) malloc (N*sizeof(double));
 	
 	if(id == 0)
@@ -401,7 +473,7 @@ int main(int argc, char **argv){ //argv é um vetor de strings.  //argc = 2 porq
 	vetX = (double *) malloc (N*sizeof(double));
 
 
-	bigC(id, nproc, naozeros,N, mat, vetB,linhas, colptr, vetX);
+	// bigC(id, nproc, naozeros,N, mat, vetB,linhas, colptr, vetX);
 	/**/
 	MPI_Finalize();
 }
